@@ -25,6 +25,7 @@ async def main():
     try:
         # Start monitoring
         print("Starting to monitor DEX Screener...")
+        print("IMPORTANT: To receive messages, send /start to @dump_sorry_bot on Telegram first!")
         await dumper_bot.monitor_dexscreener()
     except KeyboardInterrupt:
         print("\nBot stopped by user.")

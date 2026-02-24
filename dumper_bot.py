@@ -60,18 +60,35 @@ class DexDumperBot:
         """Send a formatted message to the Telegram bot"""
         try:
             if not self.chat_id:
-                # If no chat_id is set, try to get it or use a default
-                # For now, we'll need the user to provide the chat ID or start the bot
-                # This would typically be handled differently in production
-                pass
+                # Try to get the chat ID from recent messages
+                await self.update_chat_id()
             
-            # For now, we'll send to a default chat_id if provided
-            # You would need to set this to your actual chat ID
-            await self.bot.send_message(chat_id=self.chat_id or "YOUR_CHAT_ID_HERE", text=message)
-            logger.info("Message sent successfully")
-            self.messages_sent += 1  # Increment counter
+            if self.chat_id:
+                await self.bot.send_message(chat_id=self.chat_id, text=message)
+                logger.info(f"Message sent successfully to chat ID: {self.chat_id}")
+                self.messages_sent += 1  # Increment counter
+            else:
+                logger.warning(f"Cannot send message - no chat ID available. Message would have been: {message[:100]}...")
         except Exception as e:
             logger.error(f"Error sending message: {e}")
+    
+    async def update_chat_id(self):
+        """Update chat ID by fetching recent messages"""
+        try:
+            # Get recent updates to find a chat ID
+            updates = await self.bot.get_updates(limit=10)  # Get more updates to increase chances
+            for update in reversed(updates):  # Check newest first
+                if update.message and update.message.chat:
+                    self.chat_id = update.message.chat.id
+                    logger.info(f"Chat ID updated to: {self.chat_id}")
+                    return self.chat_id
+            
+            # If no chat ID found in recent messages, log this
+            logger.warning("No chat ID found from recent messages. Have you messaged the bot?")
+            return None
+        except Exception as e:
+            logger.error(f"Error updating chat ID: {e}")
+            return None
     
     async def test_connection(self):
         """Test if the bot can connect to the Telegram API"""
@@ -384,8 +401,17 @@ Finder Channel | Finder Subscription |
         """Main monitoring loop to check for new tokens"""
         logger.info("Starting DEX Screener monitoring...")
         
+        # Try to get chat ID at the start of monitoring
+        if not self.chat_id:
+            logger.info("Attempting to get chat ID from recent messages...")
+            await self.update_chat_id()
+        
         while True:
             try:
+                # Try to update chat ID periodically in case new users start the bot
+                if not self.chat_id:
+                    await self.update_chat_id()
+                
                 # Get latest tokens from DEX Screener
                 tokens = await self.fetch_latest_tokens()
                 

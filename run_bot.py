@@ -15,7 +15,7 @@ logging.basicConfig(
 async def main():
     import os
     # Initialize bot with your token from environment variable
-    bot_token = os.getenv('BOT_TOKEN', '8293626156:AAFO4sWwcQe1PjyyQZS1hi7Rd1t8SZye14k')
+    bot_token = os.getenv('BOT_TOKEN', '8442868358:AAF1WMiZTrgr3u4TXYvv1HNXg8vDp4QwQ0A')
     
     print("Initializing DEX Dumper Bot...")
     print("Bot will monitor DEX Screener for new tokens and apply filtering...")

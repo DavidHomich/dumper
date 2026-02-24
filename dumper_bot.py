@@ -20,6 +20,9 @@ class DexDumperBot:
         self.bot = Bot(token=bot_token)
         self.chat_id = None  # Will be set when we send the first message
         self.last_tokens = {}  # Track recently seen tokens to avoid duplicates
+        self.start_time = time.time()  # Track when bot started
+        self.tokens_found = 0  # Track number of tokens found
+        self.messages_sent = 0  # Track number of messages sent
         
         # Filtering parameters
         self.min_liquidity = 10000  # Minimum liquidity in USD
@@ -66,8 +69,49 @@ class DexDumperBot:
             # You would need to set this to your actual chat ID
             await self.bot.send_message(chat_id=self.chat_id or "YOUR_CHAT_ID_HERE", text=message)
             logger.info("Message sent successfully")
+            self.messages_sent += 1  # Increment counter
         except Exception as e:
             logger.error(f"Error sending message: {e}")
+    
+    async def test_connection(self):
+        """Test if the bot can connect to the Telegram API"""
+        try:
+            await self.bot.get_me()
+            return True
+        except Exception as e:
+            logger.error(f"Connection test failed: {e}")
+            return False
+    
+    async def get_me(self):
+        """Get bot info"""
+        try:
+            bot_info = await self.bot.get_me()
+            return f"Bot username: @{bot_info.username}, ID: {bot_info.id}, Name: {bot_info.first_name}"
+        except Exception as e:
+            logger.error(f"Error getting bot info: {e}")
+            return f"Error getting bot info: {e}"
+    
+    def get_status(self):
+        """Get bot status information"""
+        uptime = time.time() - self.start_time
+        hours, remainder = divmod(uptime, 3600)
+        minutes, seconds = divmod(remainder, 60)
+        
+        status = f"""
+🤖 Bot Status Report 🤖
+===================
+● Online since: {int(hours)}h {int(minutes)}m {int(seconds)}s ago
+● Tokens found: {self.tokens_found}
+● Messages sent: {self.messages_sent}
+● Bot token: {self.bot_token[:10]}...
+● Current filters:
+  - Min liquidity: ${self.min_liquidity:,}
+  - Min FDV: ${self.min_fdv:,}
+  - Max tax: {self.max_tax}%
+  - Min age: {self.min_age_days} days
+        """.strip()
+        
+        return status
     
     def calculate_score(self, token_data):
         """Calculate a score for the token based on various factors"""
@@ -359,6 +403,9 @@ Finder Channel | Finder Subscription |
                         # Mark as seen to avoid duplicate notifications
                         self.last_tokens[token_address] = time.time()
                         
+                        # Increment token counter
+                        self.tokens_found += 1
+                        
                         # Get tax and honeypot information
                         tax_info = await self.check_token_taxes_and_honeypot(
                             token_address, 
@@ -424,7 +471,7 @@ Finder Channel | Finder Subscription |
 
 async def main():
     # Initialize bot with your token
-    bot_token = "8293626156:AAFO4sWwcQe1PjyyQZS1hi7Rd1t8SZye14k"
+    bot_token = "8442868358:AAF1WMiZTrgr3u4TXYvv1HNXg8vDp4QwQ0A"
     dumper_bot = DexDumperBot(bot_token)
     
     # Start monitoring

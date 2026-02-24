@@ -71,6 +71,23 @@ class DexDumperBot:
                 logger.warning(f"Cannot send message - no chat ID available. Message would have been: {message[:100]}...")
         except Exception as e:
             logger.error(f"Error sending message: {e}")
+            # Send error notification to chat if possible
+            await self.send_error_notification(f"Error sending message: {e}")
+    
+    async def send_error_notification(self, error_message):
+        """Send an error notification to the Telegram chat"""
+        try:
+            if not self.chat_id:
+                await self.update_chat_id()
+            
+            if self.chat_id:
+                error_msg = f"🚨 BOT ERROR 🚨\n\n{error_message}\n\nTime: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+                await self.bot.send_message(chat_id=self.chat_id, text=error_msg)
+                logger.info(f"Error notification sent to chat ID: {self.chat_id}")
+            else:
+                logger.error(f"Cannot send error notification - no chat ID available. Error was: {error_message}")
+        except Exception as e:
+            logger.error(f"Failed to send error notification: {e}")
     
     async def update_chat_id(self):
         """Update chat ID by fetching recent messages"""
@@ -458,6 +475,7 @@ Finder Channel | Finder Subscription |
                 
             except Exception as e:
                 logger.error(f"Error in monitoring loop: {e}")
+                await self.send_error_notification(f"Error in monitoring loop: {e}")
                 await asyncio.sleep(60)  # Wait longer if there's an error
     
     async def fetch_latest_tokens(self):
@@ -490,9 +508,11 @@ Finder Channel | Finder Subscription |
                     return []
             else:
                 logger.warning(f"Failed to fetch tokens from DEX Screener: {response.status_code}")
+                await self.send_error_notification(f"Failed to fetch tokens from DEX Screener: {response.status_code}")
                 return []
         except Exception as e:
             logger.error(f"Error fetching tokens: {e}")
+            await self.send_error_notification(f"Error fetching tokens: {e}")
             return []
 
 async def main():

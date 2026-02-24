@@ -29,9 +29,18 @@ async def main():
         await dumper_bot.monitor_dexscreener()
     except KeyboardInterrupt:
         print("\nBot stopped by user.")
+        # Send notification about shutdown if possible
+        try:
+            await dumper_bot.send_error_notification("Bot stopped by user")
+        except:
+            pass  # Ignore errors when shutting down
     except Exception as e:
         print(f"An error occurred: {e}")
         logging.error(f"Bot error: {e}")
+        try:
+            await dumper_bot.send_error_notification(f"Critical bot error: {e}")
+        except:
+            pass  # If we can't send the error, at least log it
 
 if __name__ == "__main__":
     print("DEX Dumper Bot")
